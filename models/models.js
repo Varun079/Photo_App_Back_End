@@ -7,7 +7,8 @@ const imgSchema = new mongoose.Schema({
     img: {
         data: Buffer,
         contentType: String
-    }
+    },
+    user: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true } // <-- associate image with user
 });
 
 module.exports = mongoose.model('Image', imgSchema);

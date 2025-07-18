@@ -4,6 +4,7 @@ const fs = require("fs");
 const multer = require("multer");
 const Image = require("../../../models/models.js"); // Fixed model import path
 const { geminiAi } = require("../../../config/aiConfig.js");
+const { userAuthenticationMiddleware } = require("../middleware");
 
 const uploadsDir = path.join(__dirname, "../../../uploads");
 if (!fs.existsSync(uploadsDir)) {
@@ -22,10 +23,10 @@ const upload = multer({ storage });
 
 const imagerouter = express.Router();
 
-// GET /api/v1/image/ - get all images (metadata)
-imagerouter.get("/", async (req, res) => {
+// GET /api/v1/image/ - get all images (metadata) for the logged-in user
+imagerouter.get("/", userAuthenticationMiddleware, async (req, res) => {
   try {
-    const data = await Image.find({});
+    const data = await Image.find({ user: req.user._id });
     const items = data.map((image) => ({
       _id: image._id,
       name: image.name,
@@ -41,8 +42,8 @@ imagerouter.get("/", async (req, res) => {
   }
 });
 
-// POST /api/v1/image/ - upload image
-imagerouter.post("/", upload.single("image"), async (req, res) => {
+// POST /api/v1/image/ - upload image (associate with user)
+imagerouter.post("/", userAuthenticationMiddleware, upload.single("image"), async (req, res) => {
   try {
     if (!req.file) return res.status(400).json({ error: "No file uploaded" });
     const imageBuffer = fs.readFileSync(
@@ -50,11 +51,6 @@ imagerouter.post("/", upload.single("image"), async (req, res) => {
     );
 
     const imageBase64 = imageBuffer.toString("base64");
-
-    // const response = await geminiAi.models.generateContent({
-    //   model: "gemini-2.0-flash-lite",
-    //   contents: `Please provide a description for this image. Keep it short and include main and major points only. \n\n ${imageBase64}\n\n`,
-    // });
 
     const response = await geminiAi.models.generateContent({
       model: "gemini-2.0-flash",
@@ -71,14 +67,11 @@ imagerouter.post("/", upload.single("image"), async (req, res) => {
         maxOutputTokens: 60, // Optional: limits the response size
       },
     });
-    // Some Gemini SDKs place the response text in different fields (e.g., response.text or response.candidates[0].content.parts)
     const description =
       response.text ||
       (response.candidates &&
         response.candidates[0].content.parts.find((p) => p.text).text) ||
       "No description available";
-
-      console.log('=========>', description)
 
     const obj = {
       name: req.body.name,
@@ -87,6 +80,7 @@ imagerouter.post("/", upload.single("image"), async (req, res) => {
         data: imageBuffer,
         contentType: req.file.mimetype,
       },
+      user: req.user._id, // associate with user
     };
     const item = await Image.create(obj);
     res.status(201).json({ message: "Image uploaded", id: item._id });
