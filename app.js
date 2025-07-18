@@ -26,6 +26,17 @@ app.use(cookieParser());
 
 app.use("/api/v1", apiRouter);
 
+// Test route to set a cookie for debugging
+app.get('/test-cookie', (req, res) => {
+  res.cookie('testcookie', 'testvalue', {
+    maxAge: 1 * 24 * 60 * 60 * 1000,
+    secure: true,
+    sameSite: 'None',
+    httpOnly: true,
+  });
+  res.json({ message: 'Test cookie set' });
+});
+
 app.listen(process.env.PORT, () => {
     console.log("-------- Server started --------");
 });
