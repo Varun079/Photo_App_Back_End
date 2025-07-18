@@ -75,26 +75,25 @@ const userLoginController = async (req, res) => {
         }).lean();
 
         if (user === null) {
-            res.status(400).json({
+            return res.status(400).json({
                 isSuccess: false,
                 message: "User does not exists! Please sign up first!",
                 data: {},
             });
-            return;
         }
 
         const { password: hashedPassword } = user;
 
-        const isCorrect = bcrypt.compare(password.toString(), hashedPassword);
+        // Await bcrypt.compare and return on error
+        const isCorrect = await bcrypt.compare(password.toString(), hashedPassword);
 
         if (!isCorrect) {
-            res.status(400).json({ isSuccess: false, message: "Incorrect password! Please try again...", data: {} });
+            return res.status(400).json({ isSuccess: false, message: "Incorrect password! Please try again...", data: {} });
         }
 
         attachJWTToken(res, { email: user.email, _id: user._id });
 
-        res.status(200);
-        res.json({
+        return res.status(200).json({
             isSuccess: true,
             message: "Login successful!",
             data: {
