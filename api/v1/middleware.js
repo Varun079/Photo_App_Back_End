@@ -1,5 +1,6 @@
 const { handleGenericAPIError } = require("../../utils/controllerHelpers");
 const jwt = require("jsonwebtoken");
+const cors = require('cors');
 
 const userAuthenticationMiddleware = (req, res, next) => {
     console.log("--> inside userAuthenticationMiddleware");
