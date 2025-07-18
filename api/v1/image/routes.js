@@ -75,7 +75,7 @@ imagerouter.post("/", userAuthenticationMiddleware, upload.single("image"), asyn
 
     const obj = {
       name: req.body.name,
-      desc: description,
+      desc: req.body.desc && req.body.desc.trim() ? req.body.desc : description,
       img: {
         data: imageBuffer,
         contentType: req.file.mimetype,
